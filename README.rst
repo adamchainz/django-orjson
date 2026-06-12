@@ -42,6 +42,31 @@ Installation
 Reference
 ---------
 
+``django_orjson.default``
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A function for use with |orjson’s default parameter|__ that extends orjson to support serializing these extra types:
+
+.. |orjson’s default parameter| replace:: orjson’s ``default`` parameter
+__ https://github.com/ijl/orjson#default
+
+* |decimal.Decimal|__
+
+  .. |decimal.Decimal| replace:: ``decimal.Decimal``
+  __ https://docs.python.org/3/library/decimal.html#decimal.Decimal
+
+* |datetime.timedelta|__
+
+  .. |datetime.timedelta| replace:: ``datetime.timedelta``
+  __ https://docs.python.org/3/library/datetime.html#datetime.timedelta
+
+* Django’s ``Promise`` objects, as used for `lazy translations <https://docs.djangoproject.com/en/6.0/topics/i18n/translation/#lazy-translations>`__
+
+This function is similar to Django’s |DjangoJSONEncoder|__, used with the standard library ``json`` module.
+
+.. |DjangoJSONEncoder| replace:: ``DjangoJSONEncoder``
+__ https://docs.djangoproject.com/en/stable/topics/serialization/#djangojsonencoder
+
 ``django_orjson.http.JsonResponse``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -63,6 +88,7 @@ __ https://docs.djangoproject.com/en/stable/ref/request-response/#jsonresponse-o
 
     from django_orjson.http import JsonResponse
 
+
     def my_view(request):
         return JsonResponse({"key": "value"})
 
@@ -74,19 +100,28 @@ The object to serialize.
 ``default``
 ~~~~~~~~~~~
 
-An optional callable for serializing types not natively supported by orjson.
-It should return a value that orjson can serialize, or raise ``TypeError``:
+Passes through to |orjson’s default parameter2|__.
+Defaults to ``django_orjson.default``, for extended type support.
+
+.. |orjson’s default parameter2| replace:: orjson’s ``default`` parameter
+__ https://github.com/ijl/orjson#default
+
+Pass a different callable to handle additional types, or chain to ``django_orjson.default`` for the built-in behaviour:
 
 .. code-block:: python
 
-    import decimal
+    import pathlib
+
+    from django_orjson import default as base_default
+
 
     def default(obj):
-        if isinstance(obj, decimal.Decimal):
+        if isinstance(obj, pathlib.Path):
             return str(obj)
-        raise TypeError
+        return base_default(obj)
 
-    JsonResponse({"price": decimal.Decimal("9.99")}, default=default)
+
+    JsonResponse({"path": pathlib.Path("/tmp/file.txt")}, default=default)
 
 ``option``
 ~~~~~~~~~~
