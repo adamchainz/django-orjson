@@ -6,6 +6,8 @@ from typing import Any
 import orjson
 from django.http import HttpResponse
 
+from django_orjson import default
+
 
 class JsonResponse(HttpResponse):
     """
@@ -21,7 +23,7 @@ class JsonResponse(HttpResponse):
     def __init__(
         self,
         data: Any,
-        default: Callable[[Any], Any] | None = None,
+        default: Callable[[Any], Any] = default,
         option: int | None = None,
         **kwargs: Any,
     ) -> None:
