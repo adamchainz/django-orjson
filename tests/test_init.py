@@ -5,7 +5,6 @@ import decimal
 from inspect import getsource
 from textwrap import dedent
 
-import django
 import pytest
 from django.core.serializers.json import DjangoJSONEncoder
 from django.test import SimpleTestCase
@@ -28,7 +27,6 @@ class DefaultTests(SimpleTestCase):
         with pytest.raises(TypeError):
             default(object())
 
-    @pytest.mark.skipif(django.VERSION < (5, 0), reason="Django 5.0+")
     def test_django_json_encoder_source(self):
         """
         Monitor DjangoJSONEncoder for new types that may need handling.
