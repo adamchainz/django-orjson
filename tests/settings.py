@@ -21,4 +21,9 @@ INSTALLED_APPS = [
 
 MIDDLEWARE: list[str] = []
 
+SERIALIZATION_MODULES = {
+    "json": "django_orjson.serializers.json",
+    "jsonl": "django_orjson.serializers.jsonl",
+}
+
 USE_TZ = True
