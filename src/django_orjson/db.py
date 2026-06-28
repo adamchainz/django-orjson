@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import json
 from collections.abc import Sequence
-from typing import Any
+from functools import partial
+from typing import Any, cast
 
 import django
 import orjson
@@ -22,6 +24,21 @@ else:
     _json_field_default = default
 
 
+class OrjsonEncoder(json.JSONEncoder):
+    def __init__(self, *args: Any, option: int | None = None, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.option = option
+
+    def encode(self, o: Any) -> str:
+        data = cast(
+            bytes, orjson.dumps(o, default=_json_field_default, option=self.option)
+        )
+        return data.decode()
+
+    def iterencode(self, o: Any, _one_shot: bool = False) -> Any:
+        return iter([self.encode(o)])
+
+
 class JSONField(DjangoJSONField):
     def __init__(self, *args: Any, option: int | None = None, **kwargs: Any) -> None:
         self._orjson_option = option
@@ -29,11 +46,18 @@ class JSONField(DjangoJSONField):
             raise TypeError(f"encoder is not supported for {self.__class__.__name__}")
         if kwargs.pop("decoder", None):
             raise TypeError(f"decoder is not supported for {self.__class__.__name__}")
-        super().__init__(*args, encoder=None, decoder=None, **kwargs)  # type: ignore [misc]
+        encoder = cast(type[json.JSONEncoder], partial(OrjsonEncoder, option=option))
+        super().__init__(
+            *args,
+            encoder=encoder,
+            decoder=None,
+            **kwargs,
+        )  # type: ignore[misc]
 
     def deconstruct(self) -> tuple[str, str, Sequence[Any], dict[str, Any]]:
         name, path, args, kwargs = super().deconstruct()
         path = "django_orjson.db.JSONField"
+        kwargs.pop("encoder", None)
         if self._orjson_option is not None:
             kwargs["option"] = self._orjson_option
         return name, path, args, kwargs
@@ -47,17 +71,6 @@ class JSONField(DjangoJSONField):
             return orjson.loads(value)
         except orjson.JSONDecodeError:
             return value
-
-    def get_db_prep_value(
-        self, value: Any, connection: Any, prepared: bool = False
-    ) -> Any:
-        if not prepared:
-            value = self.get_prep_value(value)
-        if value is None:
-            return value
-        return orjson.dumps(
-            value, default=_json_field_default, option=self._orjson_option
-        ).decode()
 
     def validate(self, value: Any, model_instance: Any) -> None:
         super(DjangoJSONField, self).validate(value, model_instance)

@@ -8,11 +8,13 @@ from django.db import models
 from django_orjson.db import JSONField
 
 try:
-    from django.db.models import JSONNull as _JSONNull
+    from django.db.models import JSONNull as _JSONNull  # type: ignore[attr-defined]
 
-    _json_null_default: type = _JSONNull
+    HAVE_JSONNULL = True
 except ImportError:
-    _json_null_default = dict  # type: ignore[assignment]
+    HAVE_JSONNULL = False
+
+_json_null_default: type = _JSONNull if HAVE_JSONNULL else dict
 
 
 class JSONModel(models.Model):
@@ -32,8 +34,8 @@ class NullableJSONModel(models.Model):
 
 class RelatedJSONModel(models.Model):
     value = JSONField()
-    json_model = models.ForeignKey(NullableJSONModel, on_delete=models.CASCADE)
-    summary = models.TextField(null=True)
+    json_model: Any = models.ForeignKey(NullableJSONModel, on_delete=models.CASCADE)
+    summary: Any = models.TextField(null=True)
 
     class Meta:
         app_label = "testapp"

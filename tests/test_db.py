@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import operator
 import uuid
+from typing import Any, ClassVar, cast
 from unittest import mock
 
 import orjson
@@ -54,8 +55,27 @@ from tests.testapp.models import (
     RelatedJSONModel,
 )
 
+try:
+    from django.db.models import JSONNull  # type: ignore[attr-defined]
 
-class JSONFieldTests(TestCase):
+    HAVE_JSONNULL = True
+except ImportError:
+    HAVE_JSONNULL = False
+
+
+class _AnySequenceTestCase(TestCase):
+    def assertSequenceEqual(
+        self, seq1: Any, seq2: Any, *args: Any, **kwargs: Any
+    ) -> None:
+        return super().assertSequenceEqual(seq1, seq2, *args, **kwargs)
+
+    def assertQuerySetEqual(
+        self, qs: Any, values: Any, *args: Any, **kwargs: Any
+    ) -> None:
+        return super().assertQuerySetEqual(qs, values, *args, **kwargs)
+
+
+class JSONFieldTests(_AnySequenceTestCase):
     def test_invalid_value(self):
         with self.assertRaises(TypeError):
             NullableJSONModel.objects.create(value={"obj": object()})
@@ -77,6 +97,18 @@ class JSONFieldTests(TestCase):
             self.assertRaises((IntegrityError, DataError, OperationalError)),
         ):
             NullableJSONModel.objects.create(value={"key": "value"})
+
+    def test_get_db_prep_value_uses_backend_adaptation(self):
+        field = JSONField()
+        with mock.patch.object(
+            connection.ops,
+            "adapt_json_value",
+            wraps=connection.ops.adapt_json_value,
+        ) as adapt_json_value:
+            self.assertEqual(
+                field.get_db_prep_value({"a": "b"}, connection), '{"a":"b"}'
+            )
+        adapt_json_value.assert_called_once_with({"a": "b"}, field.encoder)
 
 
 class TestMethods(SimpleTestCase):
@@ -103,7 +135,7 @@ class TestMethods(SimpleTestCase):
         field = JSONField()
         transform = field.get_transform("my_transform")
         self.assertIs(transform, MyTransform)
-        JSONField._unregister_lookup(MyTransform)
+        JSONField._unregister_lookup(MyTransform)  # type: ignore[arg-type]
         transform = field.get_transform("my_transform")
         self.assertIsInstance(transform, KeyTransformFactory)
 
@@ -169,7 +201,7 @@ class TestFormField(SimpleTestCase):
 class TestSerialization(SimpleTestCase):
     test_data = '[{"fields": {"value": %s}, "model": "testapp.jsonmodel", "pk": null}]'
     test_values = (
-        ({"a": "b", "c": None}, '{"a": "b", "c": null}'),
+        ({"a": "b", "c": None}, '{"a":"b","c":null}'),
         ("abc", '"abc"'),
         ('{"a": "a"}', '"{\\"a\\": \\"a\\"}"'),
     )
@@ -184,9 +216,12 @@ class TestSerialization(SimpleTestCase):
     def test_loading(self):
         for value, serialized in self.test_values:
             with self.subTest(value=value):
-                instance = list(
-                    serializers.deserialize("json", self.test_data % serialized)
-                )[0].object
+                instance = cast(
+                    Any,
+                    list(serializers.deserialize("json", self.test_data % serialized))[
+                        0
+                    ].object,
+                )
                 self.assertEqual(instance.value, value)
 
     def test_xml_serialization(self):
@@ -201,16 +236,33 @@ class TestSerialization(SimpleTestCase):
                 instance = NullableJSONModel(value=value)
                 data = serializers.serialize("xml", [instance], fields=["value"])
                 self.assertXMLEqual(data, test_xml_data % serialized)
-                new_instance = list(serializers.deserialize("xml", data))[0].object
+                new_instance = cast(
+                    Any, list(serializers.deserialize("xml", data))[0].object
+                )
                 self.assertEqual(new_instance.value, instance.value)
 
 
-class TestSaveLoad(TestCase):
+class TestSaveLoad(_AnySequenceTestCase):
     def test_null(self):
         obj = NullableJSONModel(value=None)
         obj.save()
         obj.refresh_from_db()
         self.assertIsNone(obj.value)
+
+    def test_json_null_value(self):
+        obj = NullableJSONModel.objects.create(value={"a": "b"})
+        NullableJSONModel.objects.filter(pk=obj.pk).update(
+            value=Value(None, JSONField())
+        )
+        obj.refresh_from_db()
+        self.assertIsNone(obj.value)
+        lookup_value = JSONNull() if HAVE_JSONNULL else None
+        self.assertSequenceEqual(
+            NullableJSONModel.objects.filter(value=lookup_value), [obj]
+        )
+        self.assertSequenceEqual(
+            NullableJSONModel.objects.filter(value__isnull=True), []
+        )
 
     @skipUnlessDBFeature("supports_primitives_in_json_field")
     def test_primitives(self):
@@ -267,7 +319,11 @@ class TestSaveLoad(TestCase):
         )
 
 
-class TestQuerying(TestCase):
+class TestQuerying(_AnySequenceTestCase):
+    primitives: ClassVar[list[Any]]
+    objs: ClassVar[list[NullableJSONModel]]
+    raw_sql: ClassVar[str]
+
     @classmethod
     def setUpTestData(cls):
         cls.primitives = [True, False, "yes", 7, 9.6]
@@ -332,7 +388,9 @@ class TestQuerying(TestCase):
         )
 
     def test_ordering_by_transform(self):
-        mariadb = connection.vendor == "mysql" and connection.mysql_is_mariadb
+        mariadb = connection.vendor == "mysql" and getattr(
+            connection, "mysql_is_mariadb", False
+        )
         values = [
             {"ord": 93, "name": "bar"},
             {"ord": 22.1, "name": "foo"},
@@ -347,8 +405,8 @@ class TestQuerying(TestCase):
                     for value in values
                 ]
                 query = NullableJSONModel.objects.filter(
-                    **{"%s__name__isnull" % field_name: False},
-                ).order_by("%s__ord" % field_name)
+                    **{f"{field_name}__name__isnull": False},
+                ).order_by(f"{field_name}__ord")
                 expected = [objs[4], objs[2], objs[3], objs[1], objs[0]]
                 if mariadb or connection.vendor == "oracle":
                     expected = [objs[2], objs[4], objs[3], objs[1], objs[0]]
@@ -658,7 +716,7 @@ class TestQuerying(TestCase):
 
     def test_deep_values(self):
         qs = NullableJSONModel.objects.values_list("value__k__l").order_by("pk")
-        expected_objs = [(None,)] * len(self.objs)
+        expected_objs: list[tuple[Any, ...]] = [(None,)] * len(self.objs)
         expected_objs[4] = ("m",)
         self.assertSequenceEqual(qs, expected_objs)
 
@@ -929,7 +987,7 @@ class TestQuerying(TestCase):
                     expected,
                 )
 
-    def test_key_iexact(self):
+    def test_key_iexact_with_contains(self):
         self.assertIs(
             NullableJSONModel.objects.filter(value__foo__iexact="BaR").exists(), True
         )
@@ -1197,9 +1255,12 @@ class TestQuerying(TestCase):
             value={"text": "test"},
             json_model=self.objs[4],
         )
-        result = RelatedJSONModel.objects.annotate(
-            coalesced_value=Coalesce(
-                Cast("summary", JSONField()), "value", output_field=JSONField()
-            )
-        ).first()
+        result = cast(
+            Any,
+            RelatedJSONModel.objects.annotate(
+                coalesced_value=Coalesce(
+                    Cast("summary", JSONField()), "value", output_field=JSONField()
+                )
+            ).first(),
+        )
         self.assertEqual(result.coalesced_value, "This is valid JSON primitive.")
