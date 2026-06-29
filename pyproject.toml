@@ -39,7 +39,10 @@ dependencies = [
   "django>=5.2",
   "orjson>=3.10,<4",
 ]
-urls = { Changelog = "https://github.com/adamchainz/django-orjson/blob/main/CHANGELOG.rst", Funding = "https://adamj.eu/books/", Repository = "https://github.com/adamchainz/django-orjson" }
+urls.Changelog = "https://django-orjson.readthedocs.io/en/latest/changelog.html"
+urls.Documentation = "https://django-orjson.readthedocs.io/"
+urls.Funding = "https://adamj.eu/books/"
+urls.Repository = "https://github.com/adamchainz/django-orjson"
 
 [dependency-groups]
 test = [
@@ -48,11 +51,18 @@ test = [
   "pytest-django",
   "pytest-randomly",
 ]
+docs = [
+  "furo>=2024.8.6",
+  "sphinx>=7.4.7",
+  "sphinx-build-compatibility",
+  "sphinx-copybutton>=0.5.2",
+]
 django52 = [ "django>=5.2a1,<6; python_version>='3.10'" ]
 django60 = [ "django>=6a1,<6.1; python_version>='3.12'" ]
 django61 = [ "django>=6.1a1,<6.2; python_version>='3.12'" ]
 
 [tool.uv]
+sources.sphinx-build-compatibility = { git = "https://github.com/readthedocs/sphinx-build-compatibility", rev = "4f304bd4562cdc96316f4fec82b264ca379d23e0" }
 conflicts = [
   [
     { group = "django52" },
@@ -135,4 +145,8 @@ report.skip_covered = true
 report.skip_empty = true
 
 [tool.rstcheck]
+ignore_directives = [
+  "autoclass",
+  "autofunction",
+]
 report_level = "ERROR"
