@@ -76,6 +76,42 @@ This function is similar to Django’s |DjangoJSONEncoder|__, used with the stan
 .. |DjangoJSONEncoder| replace:: ``DjangoJSONEncoder``
 __ https://docs.djangoproject.com/en/stable/topics/serialization/#djangojsonencoder
 
+``django_orjson.db.JSONField``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A subclass of Django's |JSONField model field|__ that uses orjson for serialization and deserialization.
+This provides faster JSON encoding/decoding and native support for additional types such as ``datetime``, ``UUID``, and ``dataclasses``.
+
+.. |JSONField model field| replace:: ``JSONField`` model field
+__ https://docs.djangoproject.com/en/stable/ref/models/fields/#django.db.models.JSONField
+
+Usage mirrors Django's built-in ``JSONField``:
+
+.. code-block:: python
+
+    from django_orjson.db import JSONField
+
+
+    class MyModel(models.Model):
+        data = JSONField()
+
+The ``encoder`` and ``decoder`` arguments are not supported and will raise ``TypeError`` if passed.
+
+``option``
+~~~~~~~~~~
+
+An optional integer of orjson option flags, applied during serialization.
+See the `orjson documentation <https://github.com/ijl/orjson?tab=readme-ov-file#option>`__ for available options.
+Multiple options can be combined with ``|``:
+
+.. code-block:: python
+
+    import orjson
+
+
+    class MyModel(models.Model):
+        data = JSONField(option=orjson.OPT_SORT_KEYS)
+
 ``django_orjson.http.JsonResponse``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
