@@ -6,7 +6,7 @@ requires = [
 
 [project]
 name = "django-orjson"
-version = "0"
+version = "1.0.0"
 description = "orjson-powered utilities for Django."
 readme = "README.rst"
 keywords = [
