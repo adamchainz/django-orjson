@@ -10,11 +10,21 @@ import sys
 from pathlib import Path
 
 import tomllib
+from django.conf import settings
 
 # -- Path setup --------------------------------------------------------------
 
 here = Path(__file__).parent.resolve()
 sys.path.insert(0, str(here / ".." / "src"))
+
+# -- Django setup -------------------------------------------------------------
+
+if not settings.configured:
+    settings.configure(
+        SECRET_KEY="docs",
+        INSTALLED_APPS=[],
+        REST_FRAMEWORK={},
+    )
 
 # -- Project information -----------------------------------------------------
 
