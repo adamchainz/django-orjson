@@ -16,6 +16,7 @@ DATABASES: dict[str, dict[str, Any]] = {
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 INSTALLED_APPS = [
+    "django_orjson",
     "tests.testapp",
 ]
 
@@ -25,5 +26,12 @@ SERIALIZATION_MODULES = {
     "json": "django_orjson.serializers.json",
     "jsonl": "django_orjson.serializers.jsonl",
 }
+
+TEMPLATES = [
+    {
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "APP_DIRS": True,
+    },
+]
 
 USE_TZ = True
