@@ -18,6 +18,12 @@ django-orjson
    :target: https://github.com/pre-commit/pre-commit
    :alt: pre-commit
 
+----
+
+.. figure:: https://raw.githubusercontent.com/adamchainz/django-orjson/main/docs/_static/logo.svg
+   :alt: django-orjson logo
+   :align: center
+
 `orjson <https://github.com/ijl/orjson>`__-powered utilities for Django.
 
 Documentation
