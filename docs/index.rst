@@ -23,6 +23,8 @@ This package provides versions of Django’s JSON-related utilities that use `or
    http
    html
    serializers
+   sessions
+   signing
    testing
    rest_framework
    default
