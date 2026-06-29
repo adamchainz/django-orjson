@@ -24,6 +24,7 @@ This package provides versions of Django’s JSON-related utilities that use `or
    html
    serializers
    testing
+   rest_framework
    default
    changelog
 
