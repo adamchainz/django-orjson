@@ -1,8 +1,1 @@
-=========
-Changelog
-=========
-
-Pending
--------
-
-* Initial release.
+See https://django-orjson.readthedocs.io/en/latest/changelog.html
