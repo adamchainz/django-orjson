@@ -39,6 +39,15 @@ Installation
 
        python -m pip install django-orjson
 
+2. Add to your ``INSTALLED_APPS``:
+
+   .. code-block:: python
+
+       INSTALLED_APPS = [
+           ...,
+           "django_orjson",
+       ]
+
 Reference
 ---------
 
@@ -135,6 +144,42 @@ Multiple options can be combined with ``|``:
     import orjson
 
     JsonResponse({"b": 1, "a": 2}, option=orjson.OPT_SORT_KEYS)
+
+``django_orjson.html.json_script``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+An orjson-powered version of Django's |json_script|__ utility.
+It serializes ``value`` with ``orjson.dumps()``, escapes HTML/XML special characters, and wraps the result in a ``<script type="application/json">`` tag.
+
+.. |json_script| replace:: ``json_script()``
+__ https://docs.djangoproject.com/en/stable/ref/utils/#django.utils.html.json_script
+
+.. code-block:: python
+
+    from django_orjson.html import json_script
+
+    json_script({"key": "value"}, "data")
+
+Arguments:
+
+* ``value``: the object to serialize.
+* ``element_id`` (optional): an ``id`` attribute for the ``<script>`` tag.
+* ``default`` (optional): passes through to orjson; defaults to ``django_orjson.default``.
+* ``option`` (optional): passes through to orjson.
+
+``json_script`` template filter
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A template filter equivalent to Django's built-in |json_script_filter|__, using the function above.
+In your templates:
+
+.. |json_script_filter| replace:: ``json_script``
+__ https://docs.djangoproject.com/en/stable/ref/templates/builtins/#json-script
+
+.. code-block:: html+django
+
+    {% load django_orjson %}
+    {{ data|json_script:"my-data" }}
 
 ``django_orjson.serializers``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
