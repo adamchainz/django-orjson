@@ -63,3 +63,44 @@ Then configure Django REST framework to swap the default JSON renderer and parse
 
    .. |JSONParser| replace:: ``rest_framework.parsers.JSONParser``
    __ https://www.django-rest-framework.org/api-guide/parsers/#jsonparser
+
+Testing
+-------
+
+.. module:: django_orjson.rest_framework.test
+
+The following test case classes mirror |DRF’s test case classes|__, with django-orjson’s :class:`APIClient` as ``client_class`` and django-orjson’s JSON assertion methods:
+
+.. |DRF’s test case classes| replace:: DRF’s test case classes
+__ https://www.django-rest-framework.org/api-guide/testing/#api-test-cases
+
+.. autoclass:: APISimpleTestCase
+
+.. autoclass:: APITransactionTestCase
+
+.. autoclass:: APITestCase
+
+.. autoclass:: APILiveServerTestCase
+
+Use them like DRF’s built-in classes:
+
+.. code-block:: python
+
+    from django_orjson.rest_framework.test import APITestCase
+
+
+    class MyAPITests(APITestCase):
+        def test_create_account(self):
+            response = self.client.post(
+                "/accounts/",
+                {"name": "DabApps"},
+                format="json",
+            )
+            assert response.status_code == 201
+
+.. autoclass:: APIClient
+
+   A subclass of both :class:`django_orjson.test.Client` and |APIClient|__.
+
+   .. |APIClient| replace:: ``rest_framework.test.APIClient``
+   __ https://www.django-rest-framework.org/api-guide/testing/#apiclient
