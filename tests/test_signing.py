@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import django.core.signing as signing
+import pytest
 from django.test import TestCase
 
 from django_orjson.signing import OrjsonSerializer
@@ -44,7 +45,6 @@ class SigningDumpsLoadsTests(TestCase):
 
     def test_tampered_token_raises(self):
         token = signing.dumps({"x": 1}, serializer=OrjsonSerializer)
-        import pytest
 
         with pytest.raises(signing.BadSignature):
             signing.loads(token + "x", serializer=OrjsonSerializer)
@@ -63,3 +63,43 @@ class TimestampSignerTests(TestCase):
         signed = signer.sign_object(data, serializer=OrjsonSerializer)
         result = signer.unsign_object(signed, serializer=OrjsonSerializer, max_age=60)
         assert result == data
+
+
+class JSONSerializerCompatibilityTests(TestCase):
+    """
+    Migrating from Django's JSONSerializer to OrjsonSerializer is safe, but
+    the reverse case is not. Django's JSONSerializer.loads decodes payloads
+    as latin-1 before parsing, so tokens signed with OrjsonSerializer (raw
+    UTF-8) round-trip silently to mojibake rather than raising.
+    """
+
+    def test_django_json_signed_loaded_by_orjson(self):
+        data = {"user_id": 1, "action": "confirm"}
+        token = signing.dumps(data, serializer=signing.JSONSerializer)
+        assert signing.loads(token, serializer=OrjsonSerializer) == data
+
+    def test_orjson_signed_loaded_by_django_json(self):
+        data = {"user_id": 1, "action": "confirm"}
+        token = signing.dumps(data, serializer=OrjsonSerializer)
+        assert signing.loads(token, serializer=signing.JSONSerializer) == data
+
+    def test_django_json_signed_loaded_by_orjson_non_ascii(self):
+        data = {"username": "héllo", "city": "東京"}
+        token = signing.dumps(data, serializer=signing.JSONSerializer)
+        assert signing.loads(token, serializer=OrjsonSerializer) == data
+
+    @pytest.mark.xfail
+    def test_orjson_signed_loaded_by_django_json_non_ascii(self):
+        """
+        Tokens signed with OrjsonSerializer are silently corrupted when loaded
+        by Django's JSONSerializer, which decodes the payload as latin-1
+        before parsing.
+        """
+        data = {"username": "héllo", "city": "東京"}
+        token = signing.dumps(data, serializer=OrjsonSerializer)
+        loaded = signing.loads(token, serializer=signing.JSONSerializer)
+        assert loaded == data, (
+            f"Token signed by OrjsonSerializer was loaded by Django's"
+            f" JSONSerializer as {loaded!r}, silently corrupting non-ASCII"
+            f" strings via latin-1 decode of UTF-8 bytes."
+        )

@@ -26,3 +26,14 @@ Signing
 
        token = signing.dumps({"user_id": 1}, serializer=OrjsonSerializer)
        data = signing.loads(token, serializer=OrjsonSerializer)
+
+   .. warning:: **One-way migration**
+
+      Migrating from Django’s ``JSONSerializer`` to ``OrjsonSerializer`` is safe, but the reverse case is not.
+
+      Tokens signed with ``JSONSerializer`` can be verified and read by ``OrjsonSerializer`` without issue.
+      But tokens signed with ``OrjsonSerializer`` can be silently misread by ``JSONSerializer``.
+
+      Django’s ``JSONSerializer.loads`` decodes the payload as latin-1 before parsing, while ``OrjsonSerializer`` writes non-ASCII characters as raw UTF-8.
+      If you switch back, any token payload containing non-ASCII data will be *silently* misread as mojibake.
+      For example, ``héllo`` will become ``hÃ©llo``, with no ``BadSignature`` or ``UnicodeDecodeError`` raised.
