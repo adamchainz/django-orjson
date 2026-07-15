@@ -15,6 +15,8 @@ __ https://github.com/ijl/orjson
 Welcome to the documentation for django-orjson.
 This package provides versions of Django’s JSON-related utilities that use `orjson <https://github.com/ijl/orjson>`__ for ~10x faster performance and better flexibility.
 
+Read more in `the introductory blog post <https://adamj.eu/tech/2026/07/15/introducing-django-orjson/>`__.
+
 .. toctree::
    :maxdepth: 1
    :caption: Contents:

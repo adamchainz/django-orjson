@@ -25,6 +25,7 @@ django-orjson
    :align: center
 
 `orjson <https://github.com/ijl/orjson>`__-powered utilities for Django.
+Read more in `the introductory blog post <https://adamj.eu/tech/2026/07/15/introducing-django-orjson/>`__.
 
 Documentation
 -------------
