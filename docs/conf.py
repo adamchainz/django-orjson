@@ -32,7 +32,7 @@ with (here / ".." / "pyproject.toml").open("rb") as fp:
     pyproject_toml_data = tomllib.load(fp)
 
 project = pyproject_toml_data["project"]["name"]
-copyright = "2025 Adam Johnson"
+copyright = "2026 Adam Johnson"
 author = "Adam Johnson"
 
 # The version info for the project you're documenting, acts as replacement
