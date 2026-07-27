@@ -1,7 +1,7 @@
 django-orjson documentation
 ===========================
 
-*orjson-powered utilities for* |orjson|__\ *-based serialization in Django.*
+|orjson|__\ *-powered utilities for Django.*
 
 .. |orjson| replace:: *orjson*
 __ https://github.com/ijl/orjson
