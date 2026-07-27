@@ -27,6 +27,9 @@ HTTP responses
        def my_view(request):
            return JsonResponse({"key": "value"})
 
+  Unlike Django’s class, there is no ``safe`` parameter: any serializable object may be passed as ``data``, including non-\ ``dict`` objects like lists.
+  Django deprecated ``safe`` in version 6.2 (`Ticket #36905 <https://code.djangoproject.com/ticket/36905>`__), as it guarded against a JSON hijacking vulnerability that only existed in long-obsolete browsers.
+
    :param data:
       The object to serialize.
 
